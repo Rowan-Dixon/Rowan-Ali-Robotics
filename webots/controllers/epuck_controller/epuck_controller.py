@@ -27,6 +27,9 @@ if __name__ == '__main__':
     right_ps = robot.getDevice("right wheel sensor")
     right_ps.enable(timestep)
     
+    range_finder = robot.getDevice("range finder")
+    range_finder.enable(timestep)
+    
     # Movement parameters
     forward_speed = 2.0
     turn_speed = 1.5
