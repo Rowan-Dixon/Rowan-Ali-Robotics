@@ -11,7 +11,7 @@ class Odometry:
         self.y = 0.0
         self.theta = 0.0
 
-    def reset(self, left_enc: float, right_enc: float, x:float =0.0, y: float =0.0, theta: float = 0.0) -> None:
+    def rest(self, left_enc: float, right_enc: float, x:float =0.0, y: float =0.0, theta: float = 0.0) -> None:
         "Resets the odometry to the given position and wheel encoder readings."
         self.last_left_wheel_pos = left_enc
         self.last_right_wheel_pos = right_enc
@@ -23,7 +23,7 @@ class Odometry:
         "Updates the robots position based on wheel encoder readings."
         "retutns the new positsion (x, y, theta)"
         if self.last_left_wheel_pos is None or self.last_right_wheel_pos is None:
-            self.reset(left_enc, right_enc, self.x, self.y, self.theta)
+            self.reset(left_enc, right_enc, self.c, self.y, self.theta)
             return self.x, self.y, self.theta
         dl_rad = left_enc - self.last_left_wheel_pos
         dr_rad = right_enc - self.last_right_wheel_pos
