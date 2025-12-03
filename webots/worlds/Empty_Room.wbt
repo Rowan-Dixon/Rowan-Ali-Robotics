@@ -3,14 +3,14 @@
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
-EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/gctronic/e-puck/protos/E-puck.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.33308000542329985 0.017572435597924495 0.9427348086786501 2.7528909972219444
-  position 0.5124819278673493 1.2714513105366534 0.4254556509241051
+  orientation -0.6175024180690625 0.5558021341888162 0.556574120230197 2.05292274476986
+  position -0.21773108944973987 0.5248024668511627 9.15730077878329
 }
 TexturedBackground {
 }
@@ -18,24 +18,6 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   floorSize 3 3
-}
-E-puck {
-  hidden position_0_0 2.272550161339239
-  hidden position_0_1 2.2654168701501423
-  hidden linearVelocity_0 3.7130259383005335e-09 -9.561905539094753e-12 8.346508669395311e-14
-  hidden angularVelocity_0 1.6924752791490822e-09 6.609663077753429e-07 -4.7816441633877633e-14
-  hidden rotation_1 0 1 0 2.272550161339239
-  hidden linearVelocity_1 7.017680999538304e-09 -1.2026205077902344e-11 4.5417003569782693e-13
-  hidden angularVelocity_1 9.010631794977894e-10 3.5088516540802247e-07 -1.8269308557603383e-14
-  hidden rotation_2 0 0.9999999999999999 0 2.2654168701501423
-  hidden linearVelocity_2 7.017648035920077e-09 -2.4022778677309492e-11 1.177280491440658e-13
-  hidden angularVelocity_2 9.014310820516442e-10 3.5088504452572355e-07 -7.638097947857377e-14
-  translation 0.04895689996953569 1.3999499997591456 -6.396199579597646e-05
-  rotation -7.397089832384648e-07 -9.695386355662174e-05 -0.9999999952997006 0.0025506806767188776
-  controller "main_controller"
-  controllerArgs [
-    ""
-  ]
 }
 Wall {
   translation -1.6 0 0
@@ -57,4 +39,17 @@ Wall {
   rotation 0 0 1 1.5708
   name "wall(3)"
   size 0.2 3 0.3
+}
+TurtleBot3Burger {
+  hidden position_0_0 -1.4360068689711625e-11
+  hidden position_0_1 -9.505752077455805e-12
+  hidden position_0_2 -5.611731117715446e-07
+  hidden position2_0_2 -0.00010094689419529496
+  hidden position3_0_2 2.9480460696051043e-08
+  hidden rotation_8 0 -0.9999999999999999 0 1.570795999799752
+  hidden rotation_9 -0.7071047813260171 4.662044450798363e-16 -0.7071087810414222 3.141588
+  hidden rotation_10 -0.005559020996560513 -0.9999845057986096 0.0002923153608139609 0.00010094845954216926
+  translation 1.23993 0.999321 0.0030437
+  rotation -0.002307917058851175 -0.9961121722735238 -0.08806369153840447 0.004661233460299388
+  controller "epuck_main_controller"
 }

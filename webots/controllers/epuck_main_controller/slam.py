@@ -1,5 +1,6 @@
 # slam.py
 import math
+import os
 
 
 class OccupancyGrid:
@@ -120,6 +121,7 @@ class OccupancyGrid:
 
     def ascii_debug_print(self, threshold=0.5, step=2) -> None:
         """Prints an ASCII representation of the occupancy grid for debugging."""
+        os.system('cls' if os.name == 'nt' else 'clear')
         prob_map = self.get_probability_map()
         for j in range(0, self.height_cells, step):
             line = ""
@@ -133,6 +135,7 @@ class OccupancyGrid:
                     line += " "   # unknown-ish
             print(line)
         print("-" * 40)
+
 
 
 class Slam:
