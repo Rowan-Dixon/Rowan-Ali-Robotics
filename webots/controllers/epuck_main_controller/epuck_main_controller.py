@@ -28,7 +28,8 @@ def lidar_sample_ranges(lidar, sensor_angles, max_range):
     ranges = [max_range if not (0 < r <= max_range) else r for r in ranges]
     return ranges
 
-odom = Odometry(wheel_radius=0.0205, axle_length=0.058)
+# odom = Odometry(wheel_radius=0.0205, axle_length=0.058)
+odom = Odometry(wheel_radius=0.033, axle_length=0.178)
 sensors_angles = [math.radians(angle) for angle in range(360)] 
 # use lidar max range for SLAM
 max_range = lidar.getMaxRange()
@@ -47,6 +48,9 @@ right_motor = robot.getDevice("right wheel motor")
 right_motor.setPosition(float('inf'))
 right_motor.setVelocity(0.0)
 
+gyro = robot.getDevice("gyro")
+gyro.enable(timestep)   
+
 keyboard = robot.getKeyboard()
 keyboard.enable(timestep)
 
@@ -57,6 +61,7 @@ odom.reset(left_ps.getValue(), right_ps.getValue())
 while robot.step(timestep) != -1:
     # ODOM
     pose_odom = odom.update(left_ps.getValue(), right_ps.getValue())
+    print("ODOM Pose:", pose_odom)
 
     # RANGES -- sample lidar at the SLAM sensor angles
     ranges = lidar_sample_ranges(lidar, sensors_angles, max_range)
@@ -92,5 +97,5 @@ while robot.step(timestep) != -1:
     right_motor.setVelocity(right_speed)
 
     # print("SLAM Pose:", pose_slam)
-    slam.debug_print_map()
+    # slam.debug_print_map()
 
