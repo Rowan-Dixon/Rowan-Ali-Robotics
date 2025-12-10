@@ -57,16 +57,14 @@ class RBPF_SLAM:
             p[1] = py + ndy
             p[2] = math.atan2(math.sin(pth + ndtheta), math.cos(pth + ndtheta))
     
-    def _measurement_likelihood(self, px, py, pth, ranges, beam_step = 20):
-        "Compare LiDAR readings for this particle against map."
-        "Returns a likelihood (higher = better)."
-
-        score = 0.0 
+    def _measurement_likelihood(self, px, py, pth, ranges, beam_step=10):
+        #Increase sigma_r -> SLAM trusts LiDAR more and odom less -> more map drift, less jitter/noise
+        sigma_r = 0.05  # 5 cm range noise
+        score = 0.0
         count = 0
 
         for i in range(0, len(self.sensor_angles), beam_step):
             r_mes = ranges[i]
-
             if not (0.0 < r_mes < self.max_range):
                 continue
 
@@ -75,10 +73,10 @@ class RBPF_SLAM:
 
             r_exp = self.grid.expected_range(px, py, ray_theta, self.max_range)
 
-            diff = abs(r_mes - r_exp)
-            score += -diff
+            diff = r_mes - r_exp
+            score += -(diff * diff) / (2.0 * sigma_r * sigma_r) #gaussian range model
             count += 1
-        
+
         if count == 0:
             return 1e-9
         

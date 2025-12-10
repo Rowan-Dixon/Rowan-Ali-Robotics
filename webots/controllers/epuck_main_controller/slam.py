@@ -20,8 +20,8 @@ class OccupancyGrid:
             for _ in range(self.height_cells)
         ]
 
-        self.l_occupied = 0.9
-        self.l_free = -0.7
+        self.l_occupied = 1.8
+        self.l_free = -0.4
         self.l_min = -4.0
         self.l_max = 4.0
 

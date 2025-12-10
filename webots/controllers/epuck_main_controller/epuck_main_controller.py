@@ -32,14 +32,14 @@ def lidar_sample_ranges(lidar, sensor_angles, max_range):
 odom = Odometry(wheel_radius=0.033, axle_length=0.178)
 
 # LiDAR beam angles (0..359 degrees -> radians)
-sensor_angles = [math.radians(angle) for angle in range(360)]
+sensor_angles = [math.radians(-angle) for angle in range(360)] #double check the added negative to the angle is correct here
 
 # max lidar range
 max_range = lidar.getMaxRange()
 
 # ----------------- RBPF SLAM SETUP -----------------
-map_width_m = 2.0
-map_height_m = 2.0
+map_width_m = 4.0
+map_height_m = 4.0
 resolution = 0.02
 
 rbpf_slam = RBPF_SLAM(
@@ -62,8 +62,6 @@ right_motor.setVelocity(0.0)
 
 # ----------------- DISPLAY (MAP VIEW) -----------------
 map_display = robot.getDevice("map_display")
-cell_scale = 2  # pixels per map cell
-
 
 # ----------------- GYRO (optional) -----------------
 gyro = robot.getDevice("gyro")
@@ -81,7 +79,6 @@ last_print_time = -1  # for throttling printing
 while robot.step(timestep) != -1:
     # ----- ODOM -----
     pose_odom = odom.update(left_ps.getValue(), right_ps.getValue())
-    # (we don't print odom every time to avoid spamming)
 
     # ----- LIDAR RANGES -----
     ranges = lidar_sample_ranges(lidar, sensor_angles, max_range)
@@ -105,6 +102,9 @@ while robot.step(timestep) != -1:
         # Clear the display (white background)
         disp_w = map_display.getWidth()
         disp_h = map_display.getHeight()
+        cell_scale_x = disp_w / width_cells
+        cell_scale_y = disp_h / height_cells
+        cell_scale = min(cell_scale_x, cell_scale_y) #scales with display size
         map_display.setColor(0xFFFFFF)  # white
         map_display.fillRectangle(0, 0, disp_w, disp_h)
 
@@ -130,6 +130,8 @@ while robot.step(timestep) != -1:
 
                 map_display.fillRectangle(x_screen, y_screen,
                                           cell_scale, cell_scale)
+        # could we add the actual robot overlayed ontop of the map here?
+
 
         # If you still want ASCII map in console, uncomment:
         # rbpf_slam.debug_print_map()
@@ -141,23 +143,23 @@ while robot.step(timestep) != -1:
     
     key = keyboard.getKey()
     if key == ord('W'):  # Forward
-        left_speed = 2.0
-        right_speed = 2.0
+        left_speed = 5.0
+        right_speed = 5.0
     elif key == ord('S'):  # Backward
-        left_speed = -2.0
-        right_speed = -2.0
+        left_speed = -5.0
+        right_speed = -5.0
     elif key == ord('A'):  # Turn left
-        left_speed = -1.0
-        right_speed = 1.0
+        left_speed = -2.5
+        right_speed = 2.5
     elif key == ord('D'):  # Turn right
-        left_speed = 1.0
-        right_speed = -1.0
+        left_speed = 2.5
+        right_speed = -2.5
     elif key == ord('Q'):  # Forward left
-        left_speed = 1.0
-        right_speed = 2.0
+        left_speed = 2.5
+        right_speed = 5.0
     elif key == ord('E'):  # Forward right
-        left_speed = 2.0
-        right_speed = 1.0
+        left_speed = 5.0
+        right_speed = 2.5
     
     left_motor.setVelocity(left_speed)
     right_motor.setVelocity(right_speed)
