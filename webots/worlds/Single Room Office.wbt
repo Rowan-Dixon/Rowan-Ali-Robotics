@@ -1,0 +1,49 @@
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackground.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/backgrounds/protos/TexturedBackgroundLight.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/chairs/protos/OfficeChair.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/tables/protos/Desk.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/school_furniture/protos/Book.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/cabinet/protos/Cabinet.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
+
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.41686250664702756 0.2718907730906491 0.867352902837205 1.8661690773085757
+  position -0.1728475384304904 -1.5651594553780201 3.1131332780361265
+}
+TexturedBackground {
+}
+TexturedBackgroundLight {
+}
+RectangleArena {
+  floorSize 3 3
+}
+OfficeChair {
+  hidden position_0_0 0.00028010280112436526
+  hidden rotation_1 0 0 0.9999999999999999 0.000280102801179192
+  translation 0.7593463289646398 6.870723361135714e-06 -0.012393223747022147
+  rotation 0.024762106761182557 -0.9996712688012813 -0.006647736606079122 0.0015248192562887864
+}
+Desk {
+  translation 1.16 0 0
+}
+Book {
+  translation 0.9055299632679494 1 0.009882280000017687
+  rotation -8.212521081314072e-19 1 -2.4001159626513816e-17 1.5707963267948968
+}
+Cabinet {
+  hidden position_6_0 2.558164128400015e-05
+  hidden translation_7 -8.85971938523473e-06 -1.9722262711852068e-10 0
+  hidden rotation_7 0 0 1 4.4521178610058665e-05
+  hidden position_10_0 -2.174824377288995e-05
+  hidden translation_11 -6.402279982135143e-06 1.211623301689002e-10 0
+  hidden rotation_11 0 0 -1 3.7849688617180594e-05
+  translation -1.5 1.09 0
+}
+TurtleBot3Burger {
+  controller "epuck_main_controller"
+}
