@@ -80,7 +80,7 @@ while robot.step(timestep) != -1:
     ranges = lidar_sample_ranges(lidar, sensor_angles, max_range)
 
     # ----- LOCALISATION -----
-    if robot.getTime() % 3.2 < timestep / 1000.0:  # update every 3.2 seconds
+    if robot.getTime() % 3.2:
         pose_est = localizer.update(pose_odom, ranges)
         print("EST Pose:", pose_est)
 

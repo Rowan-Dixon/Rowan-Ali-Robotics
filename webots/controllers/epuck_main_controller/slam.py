@@ -25,6 +25,9 @@ class OccupancyGrid:
         self.l_min = -4.0
         self.l_max = 4.0
 
+        self._prob_map_cache = None
+        self._prob_map_dirty = True
+
     # ------------- coords -------------
 
     def world_to_map(self, x: float, y: float):
@@ -38,13 +41,21 @@ class OccupancyGrid:
     # ------------- core ops -------------
 
     def update_cell_log_odds(self, mx: int, my: int, delta_l: float) -> None:
-        """Updates the log-odds value of a cell."""
+        "Updates the log-odds value of a cell."
         if 0 <= mx < self.width_cells and 0 <= my < self.height_cells:
-            self.log_odds[my][mx] += delta_l
-            if self.log_odds[my][mx] > self.l_max:
-                self.log_odds[my][mx] = self.l_max
-            elif self.log_odds[my][mx] < self.l_min:
-                self.log_odds[my][mx] = self.l_min
+            # update log-odds with clamping
+            cell_lo = self.log_odds[my][mx] + delta_l
+
+            if cell_lo > self.l_max:
+                cell_lo = self.l_max
+            elif cell_lo < self.l_min:
+                cell_lo = self.l_min
+
+            self.log_odds[my][mx] = cell_lo
+
+            # mark probability cache as dirty
+            self._prob_map_dirty = True
+
 
     def _bresenham_line(self, x0: int, y0: int, x1: int, y1: int):
         """Generates the cells along a line using Bresenham's algorithm."""
@@ -103,7 +114,10 @@ class OccupancyGrid:
     # ------------- outputs -------------
 
     def get_probability_map(self):
-        """Returns the occupancy grid as a probability map (list[list[float]])."""
+        "Returns the occupancy grid as a probability map (list[list[float]])."
+        if self._prob_map_cache is not None and not self._prob_map_dirty:
+            return self._prob_map_cache
+
         probs = [
             [0.0 for _ in range(self.width_cells)]
             for _ in range(self.height_cells)
@@ -114,7 +128,11 @@ class OccupancyGrid:
             for i in range(self.width_cells):
                 l = row_lo[i]
                 row_p[i] = 1.0 - 1.0 / (1.0 + math.exp(l))
+
+        self._prob_map_cache = probs
+        self._prob_map_dirty = False
         return probs
+
 
     def get_log_odds_map(self):
         """Returns the occupancy grid as a log-odds map."""
@@ -142,7 +160,7 @@ class OccupancyGrid:
         " Casts a ray from (x, y) in direction ray_theta and returns expected range until hitting an occupied cell or leaving map bounds."
 
         if step is None:
-            step = self.resolution * 0.5
+            step = self.resolution * 2
 
         dist = 0.0
         prob_map = self.get_probability_map()
@@ -166,7 +184,7 @@ class OccupancyGrid:
 
 
 class MapLocalizer:
-    def __init__(self, grid: OccupancyGrid, sensor_angles, max_range: float, num_particles: int =200):
+    def __init__(self, grid: OccupancyGrid, sensor_angles, max_range: float, num_particles: int = 80):
         "Localisation on a fixed known map using a simple particle filter."
         
         self.grid = grid
@@ -215,7 +233,7 @@ class MapLocalizer:
             p[1] = py + ndy
             p[2] = math.atan2(math.sin(pth + ndtheta), math.cos(pth + ndtheta))
 
-    def _measurement_likelihood(self, px, py, pth, ranges, beam_step = 10):
+    def _measurement_likelihood(self, px, py, pth, ranges, beam_step = 30):
         "Compare LiDAR readings for this particle against map."
         "Returns a likelihood (higher = better)."
         "beam_step: use every Nth beam to save time."
