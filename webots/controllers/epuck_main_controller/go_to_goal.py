@@ -1,5 +1,11 @@
 import math
 
+'''
+To use: 
+    * Instantiate once - path = PathPlanner(pose_slam, (2.0, -0.5))
+    * call go to point each timestep - left_speed, right_speed, dist = path.go_to_point(pose_slam, ka=10.0, kd=10.0)
+'''
+
 class PathPlanner:
     def __init__(self, pose, goal):
         self.goal = goal
