@@ -5,12 +5,13 @@ EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/project
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/RectangleArena.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/apartment_structure/protos/Wall.proto"
 EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/robots/robotis/turtlebot/protos/TurtleBot3Burger.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/devices/robotis/protos/RobotisLds01.proto"
 
 WorldInfo {
 }
 Viewpoint {
-  orientation -0.5238184387794161 0.467310822325233 0.7122042112571432 1.8164422752951648
-  position -0.10076331804891092 -2.3215209039003133 5.280018759196236
+  orientation 0.6024924030512967 -0.5321262199814951 -0.5948483758687413 4.2734779821084965
+  position -0.6186669732313625 0.26488802763061414 8.980224991682537
 }
 TexturedBackground {
 }
@@ -18,6 +19,28 @@ TexturedBackgroundLight {
 }
 RectangleArena {
   floorSize 3 3
+}
+Wall {
+  translation 0.5 0 0
+  name "wall(4)"
+  size 0.2 1 0.5
+}
+Wall {
+  translation -0.61 0 0
+  name "wall(5)"
+  size 0.2 1 0.5
+}
+Wall {
+  translation 0.5 -0.85 0
+  rotation 0 0 1 1.5708
+  name "wall(6)"
+  size 0.2 1 0.5
+}
+Wall {
+  translation -0.75 0.89 0
+  rotation 0 0 1 1.5708
+  name "wall(7)"
+  size 0.2 1 0.5
 }
 Wall {
   translation -1.6 0 0
@@ -41,15 +64,24 @@ Wall {
   size 0.2 3 0.3
 }
 TurtleBot3Burger {
-  hidden position_0_0 -1.4360068689711625e-11
-  hidden position_0_1 -9.505752077455805e-12
-  hidden position_0_2 -5.611731117715446e-07
-  hidden position2_0_2 -0.00010094689419529496
-  hidden position3_0_2 2.9480460696051043e-08
-  hidden rotation_8 0 -1 0 1.5707959998715524
-  hidden rotation_9 -0.7071047813092132 4.1090960652441717e-16 -0.7071087810582258 3.141588
-  hidden rotation_10 -0.005559020996560513 -0.9999845057986096 0.0002923153608139609 0.00010094845954216926
-  translation -0.730552 -0.749911 -0.00608559
-  rotation -0.002307917058851175 -0.9961121722735238 -0.08806369153840447 0.004661233460299388
+  hidden position_0_0 4.222544590930641
+  hidden position_0_1 4.350531051422706
+  hidden position_0_2 16.506295747192496
+  hidden position2_0_2 2.0243942283669267
+  hidden position3_0_2 73.02312639100468
+  hidden rotation_9 0 1 0 2.6517485911021703
+  hidden rotation_10 -0.17994623395973197 1.9144958716425075e-06 0.983676447252878 3.1415952983431263
+  hidden rotation_11 0.6408105395415205 0.4326588852977957 0.6341672818628965 1.7326609244492686
+  translation -0.00400776 -0.00731127 -0.00489462
+  rotation 0.0023160457450959846 -0.002343104029922964 0.9999945728830791 1.56338997549434
   controller "epuck_main_controller"
+  extensionSlot [
+    Display {
+      name "map_display"
+      width 200
+      height 200
+    }
+    RobotisLds01 {
+    }
+  ]
 }

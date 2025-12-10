@@ -1,6 +1,7 @@
 # slam.py
 import math
 import os
+import random
 
 
 class OccupancyGrid:
@@ -19,10 +20,13 @@ class OccupancyGrid:
             for _ in range(self.height_cells)
         ]
 
-        self.l_occupied = 0.9
-        self.l_free = -0.7
+        self.l_occupied = 1.8
+        self.l_free = -0.4
         self.l_min = -4.0
         self.l_max = 4.0
+
+        self._prob_map_cache = None
+        self._prob_map_dirty = True
 
     # ------------- coords -------------
 
@@ -37,13 +41,21 @@ class OccupancyGrid:
     # ------------- core ops -------------
 
     def update_cell_log_odds(self, mx: int, my: int, delta_l: float) -> None:
-        """Updates the log-odds value of a cell."""
+        "Updates the log-odds value of a cell."
         if 0 <= mx < self.width_cells and 0 <= my < self.height_cells:
-            self.log_odds[my][mx] += delta_l
-            if self.log_odds[my][mx] > self.l_max:
-                self.log_odds[my][mx] = self.l_max
-            elif self.log_odds[my][mx] < self.l_min:
-                self.log_odds[my][mx] = self.l_min
+            # update log-odds with clamping
+            cell_lo = self.log_odds[my][mx] + delta_l
+
+            if cell_lo > self.l_max:
+                cell_lo = self.l_max
+            elif cell_lo < self.l_min:
+                cell_lo = self.l_min
+
+            self.log_odds[my][mx] = cell_lo
+
+            # mark probability cache as dirty
+            self._prob_map_dirty = True
+
 
     def _bresenham_line(self, x0: int, y0: int, x1: int, y1: int):
         """Generates the cells along a line using Bresenham's algorithm."""
@@ -102,7 +114,10 @@ class OccupancyGrid:
     # ------------- outputs -------------
 
     def get_probability_map(self):
-        """Returns the occupancy grid as a probability map (list[list[float]])."""
+        "Returns the occupancy grid as a probability map (list[list[float]])."
+        if self._prob_map_cache is not None and not self._prob_map_dirty:
+            return self._prob_map_cache
+
         probs = [
             [0.0 for _ in range(self.width_cells)]
             for _ in range(self.height_cells)
@@ -113,7 +128,11 @@ class OccupancyGrid:
             for i in range(self.width_cells):
                 l = row_lo[i]
                 row_p[i] = 1.0 - 1.0 / (1.0 + math.exp(l))
+
+        self._prob_map_cache = probs
+        self._prob_map_dirty = False
         return probs
+
 
     def get_log_odds_map(self):
         """Returns the occupancy grid as a log-odds map."""
@@ -136,6 +155,178 @@ class OccupancyGrid:
             print(line)
         print("-" * 40)
 
+    def expected_range(self, x: float, y: float, ray_theta:float, max_range: float, step: float = None, occ_threshold: float = 0.5):
+
+        " Casts a ray from (x, y) in direction ray_theta and returns expected range until hitting an occupied cell or leaving map bounds."
+
+        if step is None:
+            step = self.resolution * 2
+
+        dist = 0.0
+        prob_map = self.get_probability_map()
+
+        while dist < max_range: 
+            px = x + dist * math.cos(ray_theta)
+            py = y + dist * math.sin(ray_theta)
+            cell = self.world_to_map(px, py)
+
+            if cell is None:
+                return dist
+            
+            mx, my = cell 
+            p_occ = prob_map[my][mx]
+            if p_occ >= occ_threshold:
+                return dist
+            
+            dist += step
+        
+        return max_range
+
+
+class MapLocalizer:
+    def __init__(self, grid: OccupancyGrid, sensor_angles, max_range: float, num_particles: int = 80):
+        "Localisation on a fixed known map using a simple particle filter."
+        
+        self.grid = grid
+        self.sensor_angles = list(sensor_angles)
+        self.max_range = max_range
+        self.num_particles = num_particles
+
+        self.particles = []
+        self._pose = (0.0, 0.0, 0.0)
+
+        self._last_odom = None
+
+        self._init_particles_uniform()
+
+    def _init_particles_uniform(self):
+        self.particles = []
+        for _ in range(self.num_particles):
+            x = random.uniform(-0.2, 0.2)
+            y = random.uniform(-0.2, 0.2)
+            theta = random.uniform(-math.pi, math.pi)
+            w = 1.0 / self.num_particles
+            self.particles.append([x, y, theta, w])
+
+    def _motion_update(self, odom_pose):
+        if self._last_odom is None:
+            self._last_odom = odom_pose
+            return
+
+        x_old, y_old, th_old = self._last_odom
+        x_new, y_new, th_new = odom_pose
+
+        dx = x_new - x_old
+        dy = y_new - y_old
+        dtheta = math.atan2(math.sin(th_new - th_old), math.cos(th_new - th_old))
+
+        self._last_odom = odom_pose
+
+        for p in self.particles:
+            px, py, pth, pw = p
+
+            ndx = dx + random.gauss(0, 0.01)
+            ndy = dy + random.gauss(0, 0.01)
+            ndtheta = dtheta + random.gauss(0, 0.01)
+
+            p[0] = px + ndx
+            p[1] = py + ndy
+            p[2] = math.atan2(math.sin(pth + ndtheta), math.cos(pth + ndtheta))
+
+    def _measurement_likelihood(self, px, py, pth, ranges, beam_step = 30):
+        "Compare LiDAR readings for this particle against map."
+        "Returns a likelihood (higher = better)."
+        "beam_step: use every Nth beam to save time."
+    
+        score = 0.0
+        count = 0
+
+        for i in range(0, len(self.sensor_angles), beam_step):
+            r_meas = ranges[i]
+            angle = self.sensor_angles[i]
+            ray_theta = pth + angle
+
+            r_exp = self.grid.expected_range(px, py, ray_theta, self.max_range)
+
+            diff = abs(r_meas - r_exp)
+            score += -diff
+            count += 1
+
+        if count == 0:
+            return 1e-6
+        
+        avg_score = score / count
+
+        return math.exp(avg_score)
+    
+    def _measurement_update(self, ranges):
+        "Update particle weights based on LIDAR."
+
+        total_w = 0.0
+        for p in self.particles:
+            px, py, pth, w = p
+            likelihood = self._measurement_likelihood(px, py, pth, ranges)
+            p[3] = w * likelihood
+            total_w += p[3]
+        
+        if total_w == 0.0:
+            self._init_particles_uniform()
+            return
+        
+        for p in self.particles:
+            p[3] /= total_w
+
+    def _resample_particles(self):
+        "Low variance resampling."
+        new_particles = []
+        weights = [p[3] for p in self.particles]
+        if not weights:
+            return
+        
+        N = self.num_particles
+        r = random.random() / N
+        c = weights[0]
+        i = 0
+
+        for m in range(N):
+            U = r + m / N
+            while U > c and i < N - 1:
+                i += 1
+                c += weights[i]
+            px, py, pth, w = self.particles[i]
+            new_particles.append([px, py, pth, 1.0 / N])
+
+        self.particles = new_particles
+    
+    def estimate_pose(self):
+        "Return weighted mean pose of particles."
+        if not self.particles:
+            return (0.0, 0.0, 0.0)
+        
+        x_sum = 0.0
+        y_sum = 0.0
+        cos_sum = 0.0
+        sin_sum = 0.0
+
+        for px, py, pth, w in self.particles:
+            x_sum += px * w
+            y_sum += py * w
+            cos_sum += math.cos(pth) * w
+            sin_sum += math.sin(pth) * w
+
+        theta = math.atan2(sin_sum, cos_sum)
+        return (x_sum, y_sum, theta)
+    
+    def update(self, odom_pose, ranges):
+        "Update localisation estimate using odometry + LIDAR ranges. Returns estimated pose (x, y, theta)."
+        self._motion_update(odom_pose)
+        self._measurement_update(ranges)
+        self._resample_particles()
+        self._pose = self.estimate_pose()
+        return self._pose
+    
+    def get_pose(self):
+        return self._pose
 
 
 class Slam:
