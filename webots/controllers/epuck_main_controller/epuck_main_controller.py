@@ -1,6 +1,7 @@
 from controller import Robot
 from odom import Odometry
 from slam import Slam
+from go_to_goal import go_to_point, get_next_point
 import math
 
 robot = Robot()
@@ -58,44 +59,60 @@ keyboard.enable(timestep)
 robot.step(timestep)  # initial step to get sensor readings
 odom.reset(left_ps.getValue(), right_ps.getValue())
 
+
+points = [(0.5,0.5), (1.0,1.0), (1.5,0.5), (2.0,0.0), (2.0,-0.5)] #[(0.0, 0.0), (-0.5, 1.0)]  
+next_point = None
+left_speed, right_speed, dist = 0.0, 0.0, math.inf
+prev_dist_to_goal = math.inf
+
 while robot.step(timestep) != -1:
-    # ODOM
+    
     pose_odom = odom.update(left_ps.getValue(), right_ps.getValue())
-    print("ODOM Pose:", pose_odom)
-
-    # RANGES -- sample lidar at the SLAM sensor angles
     ranges = lidar_sample_ranges(lidar, sensors_angles, max_range)
+    pose_slam = slam.update(pose_odom, ranges) #we might want to run localisation only once every x timesteps for performance and accuracy
+    if not next_point:
+        # next_point = get_next_point(pose_slam, final_goal)
+        next_point = points.pop(0)
 
-    # SLAM
-    pose_slam = slam.update(pose_odom, ranges)
-    
-    # Keyboard control
-    left_speed = 0
-    right_speed = 0
-    
-    key = keyboard.getKey()
-    if key == ord('W'):  # Forward
-        left_speed = 2
-        right_speed = 2
-    elif key == ord('S'):  # Backward
-        left_speed = -2
-        right_speed = -2
-    elif key == ord('A'):  # Turn left
-        left_speed = -1
-        right_speed = 1
-    elif key == ord('D'):  # Turn right
-        left_speed = 1
-        right_speed = -1
-    elif key == ord('Q'):  # Forward left
-        left_speed = 1
-        right_speed = 2
-    elif key == ord('E'):  # Forward right
-        left_speed = 2
-        right_speed = 1
-    
+    if points:
+        left_speed, right_speed, dist = go_to_point(pose_slam, next_point, ka=10.0, kd=10.0)
+        if dist < 0.2 and points:
+            # next_point = get_next_point(pose_slam, final_goal)
+            next_point = points.pop(0)
+
+    if not points:
+        left_speed, right_speed, dist = go_to_point(pose_slam, next_point, ka=10.0, kd=10.0)
+        if dist < 0.05:
+            left_speed = 0.0
+            right_speed = 0.0
+            print("final pose: ", pose_slam)
+
     left_motor.setVelocity(left_speed)
     right_motor.setVelocity(right_speed)
 
-    # print("SLAM Pose:", pose_slam)
-    # slam.debug_print_map()
 
+    # # Keyboard control
+    # left_speed = 0
+    # right_speed = 0
+    
+    # key = keyboard.getKey()
+    # if key == ord('W'):  # Forward
+    #     left_speed = 2
+    #     right_speed = 2
+    # elif key == ord('S'):  # Backward
+    #     left_speed = -2
+    #     right_speed = -2
+    # elif key == ord('A'):  # Turn left
+    #     left_speed = -1
+    #     right_speed = 1
+    # elif key == ord('D'):  # Turn right
+    #     left_speed = 1
+    #     right_speed = -1
+    # elif key == ord('Q'):  # Forward left
+    #     left_speed = 1
+    #     right_speed = 2
+    # elif key == ord('E'):  # Forward right
+    #     left_speed = 2
+    #     right_speed = 1
+
+    # slam.debug_draw()  # optional: visualize SLAM map and pose
