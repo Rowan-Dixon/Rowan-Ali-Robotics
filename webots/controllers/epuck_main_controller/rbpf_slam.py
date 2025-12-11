@@ -27,7 +27,7 @@ class RBPF_SLAM:
         for _ in range(self.num_particles):
             x = 0.0
             y = 0.0
-            theta = random.uniform(-math.pi, math.pi)
+            theta = 0.0 # random.uniform(-math.pi, math.pi)
             w = 1.0 / self.num_particles
             self.particles.append([x, y, theta, w])
     
