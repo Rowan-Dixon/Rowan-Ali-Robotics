@@ -3,7 +3,6 @@ import math
 import os
 import random
 
-
 class OccupancyGrid:
     def __init__(self, width_m: float, height_m: float, resolution: float):
         """Initializes the occupancy grid with the given dimensions and resolution."""
@@ -39,7 +38,6 @@ class OccupancyGrid:
         return None
 
     # ------------- core ops -------------
-
     def update_cell_log_odds(self, mx: int, my: int, delta_l: float) -> None:
         "Updates the log-odds value of a cell."
         if 0 <= mx < self.width_cells and 0 <= my < self.height_cells:
@@ -112,7 +110,6 @@ class OccupancyGrid:
         self.update_cell_log_odds(end_cell[0], end_cell[1], self.l_occupied)
 
     # ------------- outputs -------------
-
     def get_probability_map(self):
         "Returns the occupancy grid as a probability map (list[list[float]])."
         if self._prob_map_cache is not None and not self._prob_map_dirty:
@@ -132,7 +129,6 @@ class OccupancyGrid:
         self._prob_map_cache = probs
         self._prob_map_dirty = False
         return probs
-
 
     def get_log_odds_map(self):
         """Returns the occupancy grid as a log-odds map."""
@@ -156,9 +152,7 @@ class OccupancyGrid:
         print("-" * 40)
 
     def expected_range(self, x: float, y: float, ray_theta:float, max_range: float, step: float = None, occ_threshold: float = 0.5):
-
         " Casts a ray from (x, y) in direction ray_theta and returns expected range until hitting an occupied cell or leaving map bounds."
-
         if step is None:
             step = self.resolution * 2
 
@@ -186,7 +180,6 @@ class OccupancyGrid:
 class MapLocalizer:
     def __init__(self, grid: OccupancyGrid, sensor_angles, max_range: float, num_particles: int = 80):
         "Localisation on a fixed known map using a simple particle filter."
-        
         self.grid = grid
         self.sensor_angles = list(sensor_angles)
         self.max_range = max_range
@@ -237,7 +230,6 @@ class MapLocalizer:
         "Compare LiDAR readings for this particle against map."
         "Returns a likelihood (higher = better)."
         "beam_step: use every Nth beam to save time."
-    
         score = 0.0
         count = 0
 
@@ -261,7 +253,6 @@ class MapLocalizer:
     
     def _measurement_update(self, ranges):
         "Update particle weights based on LIDAR."
-
         total_w = 0.0
         for p in self.particles:
             px, py, pth, w = p
@@ -328,7 +319,6 @@ class MapLocalizer:
     def get_pose(self):
         return self._pose
 
-
 class Slam:
     def __init__(self,
                  map_width_m: float,
@@ -346,12 +336,10 @@ class Slam:
 
     def update(self, odom_pose, ranges):
         """Updates the SLAM map with new odometry and range data."""
-        # for now we just trust odometry for pose
         self._pose = odom_pose
 
         for r, a in zip(ranges, self.sensor_angles):
             self.grid.update_with_lidar(self._pose, r, a, self.max_range)
-
         return self._pose
 
     def get_pose(self):

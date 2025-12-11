@@ -13,8 +13,7 @@ class PathPlanner:
         self.next_point = self.points.pop(0)
 
     def return_path(self, pose, goal):
-        #replace this with a real path planner based on the pose and goal using slam map
-        return [(0.5,0.5), (1.0,1.0), (1.5,0.5), (2.0,0.0), (2.0,-0.5)] 
+        return [goal]
 
     def go_to_point(self, pose, max_speed=3.0, ka=2.0, kd=1.0):
         """
