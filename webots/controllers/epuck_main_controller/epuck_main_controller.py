@@ -3,6 +3,7 @@ from odom import Odometry
 from rbpf_slam import RBPF_SLAM   
 from print_map import print_map
 from go_to_goal import PathPlanner
+from map_debug import plot_map
 from goals import Goals
 from obstacle_avoidance import obstacle_avoidance_override
 import math
@@ -82,14 +83,18 @@ path = None
 goals_manager = Goals()
 last_print_time = -1  # for throttling printing
 
-# goals = [(-0.75, -1.25), (-1.0, -0.75), (-1.0, 0.0), (0.25, 1.25)]
-
 while robot.step(timestep) != -1:
     
     pose_odom = odom.update(left_ps.getValue(), right_ps.getValue())
     ranges = lidar_sample_ranges(lidar, sensor_angles, max_range)
     pose_est = rbpf_slam.update(pose_odom, ranges)
-    goals_manager.discover_goals(pose_est, slam_map=rbpf_slam)
+    # goals_manager.discover_goals(pose_est, slam_map=rbpf_slam)
+
+    # ----- PRINT POSE + MAP ONCE PER SECOND -----
+    t_int = int(robot.getTime())
+    if t_int != last_print_time:
+        last_print_time = t_int
+        print_map(pose_est, rbpf_slam, map_display) 
 
     # scans the surroundings for 3 seconds (rays initially have unknown areas between)
     if robot.getTime() < 5.0: 
@@ -98,13 +103,13 @@ while robot.step(timestep) != -1:
         continue
 
     #if goal reached, set goal to none
-    if path and path.goal_dist < 0.08:
-        print("goal is ", path.goal, " vs ", goals_manager.current_goal["pos"])
-        if path.goal == goals_manager.current_goal["pos"]:
-            print("goal is a pickup/dropoff confirmed")
-            goals_manager.goal_reached()
-        print("goal reached")
-        path.goal = None
+    if path:
+        threshold = 0.08 if goals_manager.current_goal and path.goal == goals_manager.current_goal["pos"] else 0.3
+        if path.goal_dist < threshold:
+            if goals_manager.current_goal and path.goal == goals_manager.current_goal["pos"]:
+                goals_manager.goal_reached()
+            print("goal reached")
+            path.goal = None
 
     #if goal none, find new one
     if path is None or path.goal is None:
@@ -112,12 +117,8 @@ while robot.step(timestep) != -1:
         print("new goal", task_goal)
         #if task_goal, go there, else sets to none and explores
         path = PathPlanner(pose=pose_est, slam_map=rbpf_slam, goal=(task_goal["pos"] if task_goal else None))
-
-    # ----- PRINT POSE + MAP ONCE PER SECOND -----
-    t_int = int(robot.getTime())
-    if t_int != last_print_time:
-        last_print_time = t_int
-        print_map(pose_est, rbpf_slam, map_display) 
+        goal_coords = goals_manager.return_goals()
+        plot_map(rbpf_slam.get_probability_map(), rbpf_slam.grid, path=path.points if path.points else None, points=goal_coords if goal_coords else None)
 
     if path.goal:
         left_speed, right_speed = path.go_to_point(pose_est, max_speed=5.0, ka=4.0, ranges=ranges)

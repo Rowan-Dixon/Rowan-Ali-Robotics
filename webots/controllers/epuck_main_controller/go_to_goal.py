@@ -29,8 +29,6 @@ class PathPlanner:
             self.next_point = None
 
     def return_path(self, pose, slam_map, goal=None):
-        print("Planning path to", goal)
-
         prob_map = slam_map.get_probability_map()
         grid = slam_map.grid
 
@@ -43,7 +41,10 @@ class PathPlanner:
         #if no goal, go to nearest known free space, if no free space, return empty path
         # unexplored area must border explored area for a path to be possible
         if not goal:
-            goal = get_region_to_explore(self, inflated, prob_map, grid)
+            goal = self.get_region_to_explore(pose, inflated, prob_map, grid)
+            if goal is None:
+                print("No unexplored region found!")
+                return [], None
 
         #translate world to map (origin in centre instead of bottom left)
         start_cell = grid.world_to_map(pose[0], pose[1])
@@ -65,7 +66,6 @@ class PathPlanner:
             wy = cy * res - grid.height_m/2.0
             waypoints.append((wx, wy))
 
-        plot_map(inflated, grid, path=waypoints, point=goal)
         return waypoints, goal
 
     def go_to_point(self, pose, ranges, lookahead=0.22, max_speed=5.0, ka=3.0):
@@ -124,22 +124,30 @@ class PathPlanner:
         return left, right
     
     def inflate_obstacles(self, prob_map, occ_threshold, robot_radius_m, resolution):
-        H = len(prob_map)
-        W = len(prob_map[0])
+            H = len(prob_map)
+            W = len(prob_map[0])
 
-        inflation_cells = int(robot_radius_m / resolution)
-        inflated = [[0 for _ in range(W)] for _ in range(H)]
+            inflation_cells = int(robot_radius_m / resolution)
+            inflated = [[0 for _ in range(W)] for _ in range(H)]
 
-        for y in range(H):
-            for x in range(W):
-                if prob_map[y][x] > occ_threshold:
-                    for dy in range(-inflation_cells, inflation_cells+1):
-                        for dx in range(-inflation_cells, inflation_cells+1):
-                            nx = x + dx
-                            ny = y + dy
-                            if 0 <= nx < W and 0 <= ny < H: #if inside map, treat as occupied
-                                inflated[ny][nx] = 1
-        return inflated
+            unknown_lo = 0.45
+            unknown_hi = 0.55
+            occ_strong = 0.65
+
+            for y in range(H):
+                for x in range(W):
+                    p = prob_map[y][x]
+                    if unknown_lo <= p <= unknown_hi:
+                        inflated[y][x] = 1
+                        continue
+                    if p > occ_strong: 
+                        for dy in range(-inflation_cells, inflation_cells+1):
+                            for dx in range(-inflation_cells, inflation_cells+1):
+                                nx = x + dx
+                                ny = y + dy
+                                if 0 <= nx < W and 0 <= ny < H: #if inside map, treat as occupied
+                                    inflated[ny][nx] = 1
+            return inflated
 
 
     def astar(self, grid, start, goal):
@@ -184,13 +192,64 @@ class PathPlanner:
                     came_from[(nx, ny)] = current
         return None
     
-    def get_region_to_explore(self, inflated, prob_map, grid):
-        '''
-        I sent you what inflated map and prob map looks like
-        inflated adds a cushion to all obstacles so path wont brush past and crash into the wall
-        inflated also treats unknown areas as occuipied 
+    def get_region_to_explore(self, pose, inflated, prob_map, grid):
+            """
+            Select a frontier cell—a free grid cell adjacent to unknown space—given the robot pose, 
+            an inflated obstacle grid, a probabilistic occupancy map, and the occupancy grid metadata.
+            """
+            H = len(prob_map)
+            if H == 0:
+                return None
+            W = len(prob_map[0])
 
-        needs to return a goal which is an explored area but borders an unexplored area
-        so that the lidar will scan that unexplored area
-        '''
-        return [0.0, 0.0]  # Placeholder implementation
+            rx, ry, _ = pose
+
+            free_max   = 0.3
+            unknown_lo = 0.45
+            unknown_hi = 0.55
+
+            candidates = []
+
+            neighbours = [(-1, -1), (0, -1), (1, -1),
+                        (-1,  0),          (1,  0),
+                        (-1,  1), (0,  1), (1,  1)]
+
+            for my in range(H):
+                for mx in range(W):
+                    p = prob_map[my][mx]
+
+                    # Must be traversable
+                    if inflated[my][mx] != 0:
+                        continue
+
+                    # Must be confidently free
+                    if p > free_max:
+                        continue
+
+                    # Must border unknown space
+                    is_frontier = False
+                    for dx, dy in neighbours:
+                        nx = mx + dx
+                        ny = my + dy
+                        if 0 <= nx < W and 0 <= ny < H:
+                            pn = prob_map[ny][nx]
+                            if unknown_lo <= pn <= unknown_hi:
+                                is_frontier = True
+                                break
+                    if not is_frontier:
+                        continue
+
+                    world = grid.map_to_world(mx, my)
+                    if world is None:
+                        continue
+                    wx, wy = world
+
+                    dist = math.hypot(wx - rx, wy - ry)
+                    candidates.append((dist, (wx, wy)))
+
+            if not candidates:
+                return None
+
+            candidates.sort(key=lambda c: c[0])
+            print(candidates[0][1])
+            return candidates[0][1]

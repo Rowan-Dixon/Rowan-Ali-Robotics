@@ -5,7 +5,7 @@ def obstacle_avoidance_override(ranges, pose, goal, left_speed, right_speed, max
     #turns on spot in direction of goal if obstacle too close
     closese_point = min(ranges)
     index = ranges.index(closese_point)
-    if closese_point < 0.2 and (index >= 270 or index <= 90): 
+    if closese_point < 0.15 and (index >= 270 or index <= 90): 
         # print("OBSTACLE AVOIDANCE OVERRIDE: obstacle ", closese_point, "m away at ", index, "degrees")
         # dx, dy = goal[0] - pose[0], goal[1] - pose[1]
         # angle_to_goal = math.atan2(dy, dx)

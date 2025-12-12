@@ -17,7 +17,7 @@ DROPOFF_GOALS = [
     {"name": "dropoff_1", "pos": (-1.20,  0.15), "kind": "dropoff", "pair": 1,},
     {"name": "dropoff_2", "pos": (1.40,  0.50), "kind": "dropoff", "pair": 2,},
     {"name": "dropoff_3", "pos": (1.15, -0.50), "kind": "dropoff", "pair": 3,},
-    {"name": "dropoff_4", "pos": (-0.50, -0.90), "kind": "dropoff", "pair": 4,},
+    {"name": "dropoff_4", "pos": (-0.50, -0.00), "kind": "dropoff", "pair": 4,}, # -0.5, 0.9
     {"name": "dropoff_5", "pos": (1.00, -0.00), "kind": "dropoff", "pair": 5,},
 ]
 
@@ -39,6 +39,9 @@ class Goals:
 
         self.detect_radius = 0.12
         self.reached_radius = 0.08
+
+    def return_goals(self):
+        return [g["pos"] for g in self.goals]
 
     def discover_goals(self, pose, slam_map):
         x, y, _ = pose
