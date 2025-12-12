@@ -7,9 +7,9 @@ from go_to_goal import PathPlanner
 # ----------------- DEFAULT GOAL DEFINITIONS (INITIALLY UNKNOWN) -----------------
 PICKUP_GOALS = [
     {"name": "pickup_1", "pos": (1.25,  1.00), "kind": "pickup", "pair": 1,},
-    {"name": "pickup_2", "pos": (0.50, -0.75), "kind": "pickup", "pair": 2,},
-    {"name": "pickup_3", "pos": (-0.50,  0.25), "kind": "pickup", "pair": 3,},
-    {"name": "pickup_4", "pos": (0.00, -1.25), "kind": "pickup", "pair": 4,},
+    {"name": "pickup_2", "pos": (0.60, -0.25), "kind": "pickup", "pair": 2,},
+    {"name": "pickup_3", "pos": (-1.00, 0.00), "kind": "pickup", "pair": 3,},
+    {"name": "pickup_4", "pos": (-0.50, -1.25), "kind": "pickup", "pair": 4,},
     {"name": "pickup_5", "pos": (0.00,  1.40), "kind": "pickup", "pair": 5,},
 ]
 
@@ -40,19 +40,23 @@ class Goals:
         self.detect_radius = 0.12
         self.reached_radius = 0.08
 
-    # DISCOVERY
-    def discover_goals(self, pose):
+    def discover_goals(self, pose, slam_map):
         x, y, _ = pose
+        grid = slam_map.grid
+        prob_map = grid.get_probability_map()
 
         new_pickups = []
         for g in self.unknown_pick_ups:
-            gx, gy = g["pos"]
-            if math.hypot(gx - x, gy - y) < self.detect_radius:
+            wx, wy = g["pos"]
+            mx, my = grid.world_to_map(wx, wy)
+            if prob_map[my][mx] < 0.3:  # free space
                 print(f"[GOALS] DISCOVERED pickup {g['name']} at {g['pos']}")
                 self.goals.append(g)
             else:
                 new_pickups.append(g)
+
         self.unknown_pick_ups = new_pickups
+
 
         new_dropoffs = []
         for g in self.unknown_drop_offs:
@@ -109,7 +113,7 @@ class Goals:
         return None
 
     # CHECK IF REACHED GOAL + UPDATE STORAGE
-    def goal_reached(self, pose):
+    def goal_reached(self):
         
         pair = self.current_goal["pair"]
         kind = self.current_goal["kind"]

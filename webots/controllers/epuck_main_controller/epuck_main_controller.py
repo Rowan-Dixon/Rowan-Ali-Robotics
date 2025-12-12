@@ -89,7 +89,7 @@ while robot.step(timestep) != -1:
     pose_odom = odom.update(left_ps.getValue(), right_ps.getValue())
     ranges = lidar_sample_ranges(lidar, sensor_angles, max_range)
     pose_est = rbpf_slam.update(pose_odom, ranges)
-    goals_manager.discover_goals(pose_est)
+    goals_manager.discover_goals(pose_est, slam_map=rbpf_slam)
 
     # scans the surroundings for 3 seconds (rays initially have unknown areas between)
     if robot.getTime() < 5.0: 
@@ -98,14 +98,18 @@ while robot.step(timestep) != -1:
         continue
 
     #if goal reached, set goal to none
-    if path.goal_dist < 0.08:
-        path.goal = None
-        if path.goal == goals_manager.current_goal:
+    if path and path.goal_dist < 0.08:
+        print("goal is ", path.goal, " vs ", goals_manager.current_goal["pos"])
+        if path.goal == goals_manager.current_goal["pos"]:
+            print("goal is a pickup/dropoff confirmed")
             goals_manager.goal_reached()
+        print("goal reached")
+        path.goal = None
 
     #if goal none, find new one
-    if path.goal is None:
+    if path is None or path.goal is None:
         task_goal = goals_manager.choose_goal(pose_est, rbpf_slam)
+        print("new goal", task_goal)
         #if task_goal, go there, else sets to none and explores
         path = PathPlanner(pose=pose_est, slam_map=rbpf_slam, goal=(task_goal["pos"] if task_goal else None))
 
@@ -116,9 +120,9 @@ while robot.step(timestep) != -1:
         print_map(pose_est, rbpf_slam, map_display) 
 
     if path.goal:
-        left_speed, right_speed = path.go_to_point(pose_est, max_speed=5.0, ka=4.0)
+        left_speed, right_speed = path.go_to_point(pose_est, max_speed=5.0, ka=4.0, ranges=ranges)
         #highest priority: obstacle avoidance
-        left_speed, right_speed = obstacle_avoidance_override(ranges, left_speed, right_speed)
+        # left_speed, right_speed = obstacle_avoidance_override(ranges, left_speed, right_speed)
     else:
         print("EXPLORATION AND GOALS COMPLETE")
         left_speed, right_speed = 0.0, 0.0

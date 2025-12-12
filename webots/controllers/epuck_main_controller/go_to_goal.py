@@ -1,6 +1,7 @@
 import math
 import heapq
 from map_debug import plot_map
+from obstacle_avoidance import obstacle_avoidance_override
 
 '''
 To use: 
@@ -64,10 +65,10 @@ class PathPlanner:
             wy = cy * res - grid.height_m/2.0
             waypoints.append((wx, wy))
 
-        # plot_map(inflated, grid, path=waypoints, point=goal)
+        plot_map(inflated, grid, path=waypoints, point=goal)
         return waypoints, goal
 
-    def go_to_point(self, pose, lookahead=0.22, max_speed=5.0, ka=3.0):
+    def go_to_point(self, pose, ranges, lookahead=0.22, max_speed=5.0, ka=3.0):
 
         if self.goal is None or len(self.points) == 0:
             return 0.0, 0.0
@@ -119,6 +120,7 @@ class PathPlanner:
         left /= scale
         right /= scale
 
+        left, right = obstacle_avoidance_override(ranges, pose, target, left, right, max_speed)
         return left, right
     
     def inflate_obstacles(self, prob_map, occ_threshold, robot_radius_m, resolution):
