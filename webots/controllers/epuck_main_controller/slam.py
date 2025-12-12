@@ -38,6 +38,15 @@ class OccupancyGrid:
             return mx, my
         return None
 
+    def map_to_world(self, mx: int, my: int):
+        if not (0 <= mx < self.width_cells and 0 <= my < self.height_cells):
+            return None
+
+        # compute world coords of the cell centre
+        x = mx * self.resolution - self.width_m / 2.0 + (self.resolution / 2.0)
+        y = my * self.resolution - self.height_m / 2.0 + (self.resolution / 2.0)
+        return x, y
+
     # ------------- core ops -------------
 
     def update_cell_log_odds(self, mx: int, my: int, delta_l: float) -> None:

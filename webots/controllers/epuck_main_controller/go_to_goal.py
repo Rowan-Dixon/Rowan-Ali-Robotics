@@ -1,9 +1,5 @@
 import math
 import heapq
-import os
-
-import matplotlib.pyplot as plt
-import numpy as np
 from map_debug import plot_map
 
 '''
@@ -14,20 +10,25 @@ To change the goal: re-instantiate with new goal
 '''
 
 class PathPlanner:
-    def __init__(self, pose, slam_map, goal=[]):
-        self.goal = goal
-        if goal:
-            dx = goal[0] - pose[0] 
-            dy = goal[1] - pose[1]
-            self.goal_dist = math.sqrt(dx*dx + dy*dy) 
-            self.points = self.return_path(pose, goal, slam_map)
+    def __init__(self, pose, slam_map=None, goal=[]):
+        '''
+        initialise empty by not setting slam map
+        otherwise, it will plan path to goal
+        goal will be nearest unexplored cell if not given
+        '''
+        self.points, self.goal = self.return_path(pose, slam_map, goal)
+        if self.points and self.goal is not None:
+            dx = self.goal[0] - pose[0] 
+            dy = self.goal[1] - pose[1]
+            self.goal_dist = math.hypot(dx, dy)
             self.next_point = self.points.pop(0) if self.points else None
         else: 
             self.goal_dist = 0.0
             self.points = []
             self.next_point = None
 
-    def return_path(self, pose, goal, slam_map):
+    def return_path(self, pose, slam_map, goal=None):
+        print("Planning path to", goal)
 
         prob_map = slam_map.get_probability_map()
         grid = slam_map.grid
@@ -37,18 +38,23 @@ class PathPlanner:
                                     occ_threshold=0.3,
                                     robot_radius_m=0.04,   
                                     resolution=grid.resolution)
+        
+        #if no goal, go to nearest known free space, if no free space, return empty path
+        # unexplored area must border explored area for a path to be possible
+        if not goal:
+            goal = get_region_to_explore(self, inflated, prob_map, grid)
 
         #translate world to map (origin in centre instead of bottom left)
         start_cell = grid.world_to_map(pose[0], pose[1])
         goal_cell = grid.world_to_map(goal[0], goal[1])
         if start_cell is None or goal_cell is None:
             print("Start/goal out of map!")
-            return []
+            return [], None
 
         path_cells = self.astar(inflated, start_cell, goal_cell)
         if not path_cells:
             print("NO PATH FOUND")
-            return []
+            return [], None
 
         #translate back
         waypoints = []
@@ -58,10 +64,13 @@ class PathPlanner:
             wy = cy * res - grid.height_m/2.0
             waypoints.append((wx, wy))
 
-        plot_map(inflated, grid, path=waypoints, point=goal)
-        return waypoints
+        # plot_map(inflated, grid, path=waypoints, point=goal)
+        return waypoints, goal
 
     def go_to_point(self, pose, lookahead=0.22, max_speed=5.0, ka=3.0):
+
+        if self.goal is None or len(self.points) == 0:
+            return 0.0, 0.0
 
         x, y, theta = pose
         self.goal_dist = math.hypot(self.goal[0] - x, self.goal[1] - y)
@@ -172,3 +181,14 @@ class PathPlanner:
                     heapq.heappush(pq, (priority, (nx, ny)))
                     came_from[(nx, ny)] = current
         return None
+    
+    def get_region_to_explore(self, inflated, prob_map, grid):
+        '''
+        I sent you what inflated map and prob map looks like
+        inflated adds a cushion to all obstacles so path wont brush past and crash into the wall
+        inflated also treats unknown areas as occuipied 
+
+        needs to return a goal which is an explored area but borders an unexplored area
+        so that the lidar will scan that unexplored area
+        '''
+        return [0.0, 0.0]  # Placeholder implementation
